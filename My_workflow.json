@@ -1,0 +1,298 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -620,
+        20
+      ],
+      "id": "68b95af7-1bbe-4cd7-8ae0-1e04e5545455",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.row_number }}\n{{ $json['Invoice ID'] }}\n{{ $json['Due Date'] }}\n{{ $json['Amount Due'] }}\n{{ $json.Status }}\n{{ $json['Customer Name'] }}\n\nAccess Google Sheet named \"financecustomer\" from the user's Google Drive.\nLoop through each row, starting from row 2 (skip header).\nRead values from the following columns:\nInvoice ID\nCustomer Email\nInvoice Date\nDue Date\nAmount Due\nStatus\nConditional Actions:\n✅ If Status is \"Unpaid\":\nSend an email to Customer Email.\nAmount Paid: ₹[Amount Due]\n",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -240,
+        20
+      ],
+      "id": "25bf5c57-67cd-4927-9372-241ff294f100",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -220,
+        240
+      ],
+      "id": "83230bc0-90bc-4c91-91be-3fbe3a7a4e80",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "3coB5s7b49zM0HgB",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "0cbe06fe-d7a5-4374-83cd-3c6fc9489e1a",
+              "leftValue": "={{ $('Google Sheets1').item.json.Status }}",
+              "rightValue": "Paid",
+              "operator": {
+                "type": "string",
+                "operation": "notEquals"
+              }
+            },
+            {
+              "id": "8ddd3cd1-1009-4687-a5b8-640a33dea450",
+              "leftValue": "={{ $('Google Sheets1').item.json.Status }}",
+              "rightValue": "Unpaid",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "looseTypeValidation": true,
+        "options": {
+          "ignoreCase": false
+        }
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        160,
+        20
+      ],
+      "id": "ae5abeec-8878-42f6-941f-56e929bc75e6",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "sendTo": "erp@snsgroups.com",
+        "subject": "=Payment remainder to   {{ $('Google Sheets1').item.json['Customer Name'] }}",
+        "emailType": "text",
+        "message": "=Dear {{ $('Google Sheets1').item.json['Customer Name'] }}\n\nThis is a reminder that your invoice [{{ $('Google Sheets1').item.json['Invoice ID'] }}], dated [{{ $('Google Sheets1').item.json['Invoice Date'] }}], is due on {{ $('Google Sheets1').item.json['Due Date'] }}.\n\nAmount Due: ₹[{{ $('Google Sheets1').item.json['Amount Due'] }}]\n\nKindly complete the payment before the due date. If you have already paid, please ignore this message.\n\nThank you,  \nFinance Team",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        440,
+        -80
+      ],
+      "id": "3353e62c-1ddb-43d3-bb69-954efa386208",
+      "name": "unpaid",
+      "webhookId": "b52e37db-9ebc-4766-8df2-a14dbc412008",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "bA4jrdHhBk3W9d92",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "erp@snsgroups.com",
+        "subject": "Paid",
+        "emailType": "text",
+        "message": "thanks for pay your fee regularly",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        440,
+        100
+      ],
+      "id": "2ff80c8d-977e-4ac9-ad17-ea230a6842af",
+      "name": "Paid",
+      "webhookId": "ec04c2ef-1018-4bd6-920c-5e75603f2ad2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "bA4jrdHhBk3W9d92",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1wgtN1hbKUXz9A5RbDvnOgpORE1dj3HUFKRPxPYWU7EQ",
+          "mode": "list",
+          "cachedResultName": "financecustomer",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wgtN1hbKUXz9A5RbDvnOgpORE1dj3HUFKRPxPYWU7EQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wgtN1hbKUXz9A5RbDvnOgpORE1dj3HUFKRPxPYWU7EQ/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        -400,
+        20
+      ],
+      "id": "c72be660-3e5b-4df5-a7e4-cbbd2242e71a",
+      "name": "Google Sheets1",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8083IteCIykjlvRy",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1wgtN1hbKUXz9A5RbDvnOgpORE1dj3HUFKRPxPYWU7EQ",
+          "mode": "list",
+          "cachedResultName": "financecustomer",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wgtN1hbKUXz9A5RbDvnOgpORE1dj3HUFKRPxPYWU7EQ/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1wgtN1hbKUXz9A5RbDvnOgpORE1dj3HUFKRPxPYWU7EQ/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        -80,
+        240
+      ],
+      "id": "37e5c78c-03a3-4e0c-8852-9d3a8831198d",
+      "name": "Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "8083IteCIykjlvRy",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Google Sheets1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "unpaid",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Paid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Sheets": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "1e8315a0-7c47-46b6-a02e-664527ed5b8a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "e24f9dbfb2b28ea5148864a25d63bd35a57508c5ed8b1ba76eff44a019a8e512"
+  },
+  "id": "Neo0QkTVfE4WcM0J",
+  "tags": []
+}
